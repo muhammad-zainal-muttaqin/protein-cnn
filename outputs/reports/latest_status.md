@@ -1,6 +1,6 @@
 # Latest Status
 
-Updated: 2026-03-30T13:20:31.220024+00:00
+Updated: 2026-03-30T13:27:59.675115+00:00
 
 ## Current Best
 
@@ -12,11 +12,11 @@ Updated: 2026-03-30T13:20:31.220024+00:00
 
 ## Runner-up
 
-- Run: `cnn1d_optuna_final`
-- Model: `cnn1d`
-- Best validation Q8: `0.7203`
-- Test Q8 on CB513: `0.6820`
-- Test loss: `inf`
+- Run: `s1_06_resdil_cnn1d_baseline42_ce_none_c320`
+- Model: `resdil_cnn1d`
+- Best validation Q8: `0.7171`
+- Test Q8 on CB513: `0.6841`
+- Test loss: `0.8881`
 
 ## Notes
 
