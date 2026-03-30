@@ -1,0 +1,22 @@
+{
+  "date": "2026-03-30",
+  "device": "NVIDIA GeForce RTX 3060",
+  "metric": "masked_q8_accuracy",
+  "models": {
+    "cnn1d": {
+      "best_val_q8_accuracy": 0.7060674620381143,
+      "test_q8_accuracy": 0.6695098212705716,
+      "report_path": "artifacts/cnn1d/report.json"
+    },
+    "cnn2d": {
+      "best_val_q8_accuracy": 0.6794887756460067,
+      "test_q8_accuracy": 0.642741697634637,
+      "report_path": "artifacts/cnn2d/report.json"
+    }
+  },
+  "current_best_model": "cnn1d",
+  "recommendation": {
+    "architecture": "cnn1d",
+    "next_step": "optuna_tuning_before_knowledge_distillation"
+  }
+}
