@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,12 +65,17 @@ def existing_run_names() -> set[str]:
 
 def sortable_row(row: dict) -> dict | None:
     try:
+        test_loss = row.get("test_loss")
+        if test_loss in (None, "", "inf"):
+            notes = row.get("notes", "")
+            match = re.search(r"test_loss=([0-9.]+)", notes)
+            test_loss = match.group(1) if match else "inf"
         return {
             "run_name": row["run_name"],
             "model": row["model"],
             "best_val_q8": float(row["best_val_q8"]),
             "test_q8": float(row["test_q8"]),
-            "test_loss": float(row.get("test_loss", "inf")),
+            "test_loss": float(test_loss),
             "phase": row["phase"],
         }
     except (KeyError, TypeError, ValueError):

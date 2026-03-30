@@ -9,6 +9,7 @@ import numpy as np
 AMINO_ACID_SLICE = slice(0, 21)
 LABEL_SLICE = slice(22, 30)
 PROFILE_SLICE = slice(35, 56)
+EXTRA_FEATURE_SLICE = slice(31, 35)
 MASK_INDEX = 56
 MAX_LEN = 700
 NUM_CLASSES = 8
@@ -26,11 +27,18 @@ def _load_raw(path: str | Path) -> np.ndarray:
     return array.reshape(-1, MAX_LEN, 57)
 
 
-def load_protein_arrays(path: str | Path) -> ProteinArrays:
+def load_protein_arrays(path: str | Path, feature_set: str = "baseline42") -> ProteinArrays:
     raw = _load_raw(path)
     aa = np.asarray(raw[:, :, AMINO_ACID_SLICE], dtype=np.float32)
     profile = np.asarray(raw[:, :, PROFILE_SLICE], dtype=np.float32)
-    features = np.concatenate([aa, profile], axis=-1)
+    extra = np.asarray(raw[:, :, EXTRA_FEATURE_SLICE], dtype=np.float32)
+
+    if feature_set == "baseline42":
+        features = np.concatenate([aa, profile], axis=-1)
+    elif feature_set == "extended46":
+        features = np.concatenate([aa, extra, profile], axis=-1)
+    else:
+        raise ValueError(f"Unknown feature_set: {feature_set}")
 
     labels = np.asarray(np.argmax(raw[:, :, LABEL_SLICE], axis=-1), dtype=np.int64)
     mask = np.asarray(raw[:, :, MASK_INDEX] == 0, dtype=bool)

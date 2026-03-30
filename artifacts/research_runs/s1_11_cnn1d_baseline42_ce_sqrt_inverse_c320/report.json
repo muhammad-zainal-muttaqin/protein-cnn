@@ -1,0 +1,195 @@
+{
+  "config": {
+    "train_path": "/workspace/cullpdb+profile_5926_filtered.npy.gz",
+    "test_path": "/workspace/cb513+profile_split1.npy.gz",
+    "model": "cnn1d",
+    "feature_set": "baseline42",
+    "epochs": 6,
+    "batch_size": 16,
+    "lr": 0.001,
+    "weight_decay": 4e-06,
+    "dropout": 0.22,
+    "channels": 320,
+    "loss": "ce",
+    "class_weighting": "sqrt_inverse",
+    "focal_gamma": 1.5,
+    "val_fraction": 0.2,
+    "seed": 42,
+    "output_dir": "/workspace/protein-cnn/artifacts/research_runs/s1_11_cnn1d_baseline42_ce_sqrt_inverse_c320"
+  },
+  "device": "cuda",
+  "dataset_summary": {
+    "train_all": {
+      "num_proteins": 5365,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 1154412,
+      "min_length": 12,
+      "max_length": 696,
+      "mean_length": 215.17465051258154,
+      "median_length": 184.0,
+      "label_counts": [
+        221211,
+        11832,
+        250804,
+        45155,
+        212,
+        399879,
+        95133,
+        130186
+      ]
+    },
+    "train": {
+      "num_proteins": 4292,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 921481,
+      "min_length": 15,
+      "max_length": 696,
+      "mean_length": 214.69734389561975,
+      "median_length": 184.0,
+      "label_counts": [
+        176711,
+        9420,
+        199405,
+        35829,
+        181,
+        320067,
+        75972,
+        103896
+      ]
+    },
+    "val": {
+      "num_proteins": 1073,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 232931,
+      "min_length": 12,
+      "max_length": 693,
+      "mean_length": 217.0838769804287,
+      "median_length": 185.0,
+      "label_counts": [
+        44500,
+        2412,
+        51399,
+        9326,
+        31,
+        79812,
+        19161,
+        26290
+      ]
+    },
+    "test": {
+      "num_proteins": 514,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 84765,
+      "min_length": 20,
+      "max_length": 700,
+      "mean_length": 164.9124513618677,
+      "median_length": 132.0,
+      "label_counts": [
+        17920,
+        1181,
+        18016,
+        3132,
+        30,
+        26157,
+        8316,
+        10013
+      ]
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "seconds": 3.2106518745422363,
+      "train": {
+        "loss": 0.2429229388200747,
+        "q8_accuracy": 0.6288257706887066,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.24541932241850464,
+        "q8_accuracy": 0.6036980908509387,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 2,
+      "seconds": 2.7551350593566895,
+      "train": {
+        "loss": 0.21932546492646443,
+        "q8_accuracy": 0.6659898576313564,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.20801330991171388,
+        "q8_accuracy": 0.6852758971540929,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 3,
+      "seconds": 2.6549692153930664,
+      "train": {
+        "loss": 0.2114529182857488,
+        "q8_accuracy": 0.6756742678362332,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.20864415550044263,
+        "q8_accuracy": 0.6838849272960662,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 4,
+      "seconds": 2.6095001697540283,
+      "train": {
+        "loss": 0.20580064062072942,
+        "q8_accuracy": 0.6819782502297931,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.20185714218158862,
+        "q8_accuracy": 0.6902430333446385,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 5,
+      "seconds": 2.7662367820739746,
+      "train": {
+        "loss": 0.2012974593490546,
+        "q8_accuracy": 0.6878655121483785,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.20478619528424716,
+        "q8_accuracy": 0.6872163859683769,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 6,
+      "seconds": 2.6899237632751465,
+      "train": {
+        "loss": 0.19801913323221534,
+        "q8_accuracy": 0.6910744768475964,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.199273739791023,
+        "q8_accuracy": 0.6934972159137255,
+        "tokens": 232931
+      }
+    }
+  ],
+  "best_val_q8_accuracy": 0.6934972159137255,
+  "test": {
+    "loss": 0.2404947915494122,
+    "q8_accuracy": 0.6556479679112841,
+    "tokens": 84765
+  }
+}

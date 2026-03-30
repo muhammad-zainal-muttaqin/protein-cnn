@@ -1,6 +1,6 @@
 # Latest Status
 
-Updated: 2026-03-30T16:19:08.032262+00:00
+Updated: 2026-03-30T14:31:59.604156+00:00
 
 ## Current Best
 
@@ -12,14 +12,14 @@ Updated: 2026-03-30T16:19:08.032262+00:00
 
 ## Runner-up
 
-- Run: `p4_01_resdil_b42_ce_none_c320_e18`
+- Run: `s2_02_s1_02_resdil_cnn1d_baseline42_ce_none_c192`
 - Model: `resdil_cnn1d`
-- Best validation Q8: `0.7303`
-- Test Q8 on CB513: `0.6919`
-- Test loss: `0.9327`
+- Best validation Q8: `0.7264`
+- Test Q8 on CB513: `0.6879`
+- Test loss: `0.9243`
 
 ## Notes
 
-- Research is running sequentially and recording every experiment.
-- Phase 4 focuses on the strongest ResDil CNN1D candidates.
+- Search is running sequentially and recording every experiment.
 - Full ledger is stored in `outputs/reports/run_ledger.csv`.
+- Detailed experiment summaries are stored in `outputs/reports/research_summary.json`.
