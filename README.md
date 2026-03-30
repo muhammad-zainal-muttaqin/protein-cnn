@@ -4,7 +4,7 @@ Repo ini mendokumentasikan eksperimen CNN untuk prediksi secondary structure pro
 
 Eksperimen berjalan dalam tiga fase yang sequential: verifikasi dataset → baseline architecture comparison → hyperparameter tuning. Setiap fase menghasilkan keputusan yang di-lock dan dibawa ke fase berikutnya, sehingga progres eksperimen tetap reproducible dan traceable.
 
-Hasil akhir saat ini: model terbaik adalah **tuned `CNN 1D`** dengan **validation Q8 = 0.7203** dan **test Q8 pada CB513 = 0.6820**. `CNN 2D` juga membaik setelah tuning, tetapi tetap tertinggal cukup jelas dengan **test Q8 = 0.6526**. Kesimpulan praktisnya sederhana: untuk problem ini, `CNN 1D` tetap menjadi backbone yang paling masuk akal untuk diteruskan.
+Hasil terbaik saat ini bukan lagi baseline Optuna lama, tetapi **incremental `Residual Dilated CNN 1D`** dengan **validation Q8 = 0.7268**, **test Q8 pada CB513 = 0.6878**, dan **test loss = 0.8872**. Ini menggeser tuned `CNN 1D` sebelumnya (`0.6820` test Q8, `0.8967` test loss). `CNN 2D` tetap tertinggal cukup jelas, sehingga jalur riset utama sekarang berpusat pada keluarga model `1D`.
 
 ---
 
@@ -18,9 +18,9 @@ Sebelum masuk ke narasi per fase, ini keputusan dan angka resmi yang sekarang di
 | Dataset test final | `cb513+profile_split1.npy.gz` |
 | Task | masked `Q8` secondary-structure prediction |
 | Input features | `42` kanal per residu |
-| Arsitektur terbaik | `CNN 1D` |
+| Arsitektur terbaik | `Residual Dilated CNN 1D` |
 | Baseline terbaik | `artifacts/cnn1d/report.json` |
-| Run tuning terbaik | `artifacts/optuna_cnn1d/optuna_report.json` |
+| Run terbaik saat ini | `artifacts/incremental_resdil_step1/report.json` |
 | Ledger seluruh run | `outputs/reports/run_ledger.csv` |
 
 Metrik resmi saat ini:
@@ -31,6 +31,7 @@ Metrik resmi saat ini:
 | Baseline CNN 2D | 0.6795 | 0.6427 |
 | Tuned CNN 1D | **0.7203** | **0.6820** |
 | Tuned CNN 2D | 0.6914 | 0.6526 |
+| Incremental ResDil CNN 1D | **0.7268** | **0.6878** |
 
 Status terkini yang paling ringkas tersedia di [outputs/reports/latest_status.md](outputs/reports/latest_status.md).
 
@@ -172,23 +173,54 @@ Artefak:
 - [artifacts/optuna_cnn2d/trial_logs.jsonl](artifacts/optuna_cnn2d/trial_logs.jsonl)
 - [artifacts/optuna_cnn2d/final_history.jsonl](artifacts/optuna_cnn2d/final_history.jsonl)
 
+### Phase 3 — Incremental architecture improvement
+
+Setelah ruang hyperparameter dasar mulai plateau, eksperimen dilanjutkan secara incremental ke arsitektur `Residual Dilated CNN 1D`. Tujuannya bukan mengganti problem setup, tetapi memperkuat receptive field sequence sambil tetap mempertahankan bias induktif model 1D.
+
+Run terbaik saat ini:
+
+- model: `resdil_cnn1d`
+- feature set: `baseline42`
+- loss: `cross_entropy`
+- class weighting: `none`
+- channels: `256`
+- epochs: `12`
+
+Hasil:
+
+- best validation Q8: `0.7268`
+- final test Q8: `0.6878`
+- final test loss: `0.8872`
+
+Interpretasi praktis:
+
+- kenaikan `test Q8` terhadap tuned `CNN 1D`: `+0.0058`
+- penurunan `test loss` terhadap tuned `CNN 1D`: `0.8967 -> 0.8872`
+- ini memberi sinyal bahwa arsitektur sequence 1D yang lebih dalam masih punya ruang perbaikan, sementara tuning hiperparameter murni mulai jenuh
+
+Artefak:
+
+- [artifacts/incremental_resdil_step1/report.json](artifacts/incremental_resdil_step1/report.json)
+- [artifacts/incremental_resdil_step1/history.jsonl](artifacts/incremental_resdil_step1/history.jsonl)
+
 ---
 
 ## Insight Utama
 
 Kesimpulan paling penting dari seluruh perjalanan eksperimen:
 
-1. `CNN 1D` unggul sejak baseline dan tetap unggul setelah tuning.
-2. Hyperparameter tuning memang membantu kedua model, tetapi **membantu `CNN 1D` lebih efektif**.
-3. `CNN 2D` tidak gagal total, tetapi cost/performance-nya kalah jelas dari `CNN 1D`.
-4. Bottleneck eksperimen saat ini bukan lagi “memilih antara 1D vs 2D”, karena jawabannya sudah cukup jelas: **pilih 1D**.
-5. Langkah berikutnya yang paling rasional bukan lagi mengganti arsitektur dasar, melainkan memperdalam tuning `CNN 1D`, menambah evaluasi per seed, dan menambah analisis kelas.
+1. Keluarga model `1D` unggul sejak baseline, tetap unggul setelah tuning, dan masih membaik setelah arsitektur diperkuat secara incremental.
+2. Hyperparameter tuning memang membantu kedua model, tetapi **membantu `CNN 1D` jauh lebih efektif** daripada `CNN 2D`.
+3. `CNN 2D` tidak gagal total, tetapi cost/performance-nya kalah jelas dari model sequence `1D`.
+4. Bottleneck eksperimen bukan lagi “1D vs 2D”; keputusan itu sudah cukup jelas. Pusat optimasi sekarang adalah **bagaimana memperkuat model 1D sambil menekan loss**.
+5. Langkah berikutnya yang paling rasional adalah sweep berjenjang pada `cnn1d` dan `resdil_cnn1d`, evaluasi multi-seed, serta analisis kelas dan loss curve yang lebih detail.
 
 Secara praktis:
 
-- jika butuh model terbaik saat ini: pilih `CNN 1D tuned`
-- jika butuh pembanding arsitektur: simpan `CNN 2D tuned` sebagai runner-up
-- jika butuh fokus eksperimen berikutnya: teruskan hanya `CNN 1D`
+- jika butuh model terbaik saat ini: pilih `incremental_resdil_step1`
+- jika butuh baseline yang lebih sederhana: pakai `CNN 1D tuned`
+- jika butuh pembanding arsitektur: simpan `CNN 2D tuned` sebagai runner-up historis
+- jika butuh fokus eksperimen berikutnya: teruskan hanya keluarga model `1D`
 
 ---
 
@@ -210,6 +242,7 @@ Log detail yang bisa dianalisis ulang:
 - tuning final `CNN 1D`: [artifacts/optuna_cnn1d/final_history.jsonl](artifacts/optuna_cnn1d/final_history.jsonl)
 - tuning trials `CNN 2D`: [artifacts/optuna_cnn2d/trial_logs.jsonl](artifacts/optuna_cnn2d/trial_logs.jsonl)
 - tuning final `CNN 2D`: [artifacts/optuna_cnn2d/final_history.jsonl](artifacts/optuna_cnn2d/final_history.jsonl)
+- incremental `ResDil CNN 1D`: [artifacts/incremental_resdil_step1/history.jsonl](artifacts/incremental_resdil_step1/history.jsonl)
 
 ---
 
