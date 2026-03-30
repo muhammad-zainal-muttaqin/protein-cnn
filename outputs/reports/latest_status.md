@@ -1,6 +1,6 @@
 # Latest Status
 
-Updated: 2026-03-30T13:42:39.967774+00:00
+Updated: 2026-03-30T14:14:56.300347+00:00
 
 ## Current Best
 
@@ -20,6 +20,6 @@ Updated: 2026-03-30T13:42:39.967774+00:00
 
 ## Notes
 
-- Search is running sequentially and recording every experiment.
+- Stage 1 sweep is complete and recorded.
+- Remaining queued work focuses on higher-probability ResDil CNN1D candidates.
 - Full ledger is stored in `outputs/reports/run_ledger.csv`.
-- Detailed experiment summaries are stored in `outputs/reports/research_summary.json`.
