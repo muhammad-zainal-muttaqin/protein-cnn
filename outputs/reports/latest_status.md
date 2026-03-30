@@ -1,6 +1,6 @@
 # Latest Status
 
-Updated: 2026-03-30T17:15:45.990504+00:00
+Updated: 2026-03-30T17:39:01.797484+00:00
 
 ## Current Best
 
@@ -20,6 +20,6 @@ Updated: 2026-03-30T17:15:45.990504+00:00
 
 ## Notes
 
-- Research is running sequentially and recording every experiment.
-- Phase 4 focuses on the strongest ResDil CNN1D candidates.
-- Full ledger is stored in `outputs/reports/run_ledger.csv`.
+- Ledger final berisi `101` eksperimen (`102` record CSV termasuk header).
+- Best final berasal dari `research_phase4` dan mengungguli baseline CNN 1D sebesar `+0.0231` absolute pada test Q8.
+- Full ledger tersedia di `outputs/reports/run_ledger.csv`.

@@ -1,254 +1,224 @@
-# Protein CNN — Secondary Structure Prediction on CullPDB / CB513
+# Protein CNN — Prediksi Secondary Structure Protein pada CullPDB / CB513
 
-Repo ini mendokumentasikan eksperimen CNN untuk prediksi secondary structure protein berbasis `CullPDB` sebagai train/validation source dan `CB513` sebagai final test set. Fokus eksperimen sengaja dijaga sederhana dan ketat: mulai dari baseline `CNN 1D` vs `CNN 2D`, lalu lanjut ke hyperparameter tuning pada kedua arsitektur dengan audit trail yang lengkap.
+Repo ini mendokumentasikan eksperimen berjenjang untuk prediksi **secondary structure protein (Q8)** menggunakan `CullPDB` sebagai sumber train/validation dan `CB513` sebagai **final holdout test set**. Fokus eksperimennya dijaga ketat: mulai dari baseline `CNN 1D` vs `CNN 2D`, lanjut ke `Optuna`, lalu diteruskan ke sweep arsitektur `Residual Dilated CNN 1D` dengan ledger yang lengkap.
 
-Eksperimen berjalan dalam tiga fase yang sequential: verifikasi dataset → baseline architecture comparison → hyperparameter tuning. Setiap fase menghasilkan keputusan yang di-lock dan dibawa ke fase berikutnya, sehingga progres eksperimen tetap reproducible dan traceable.
+Eksperimen akhirnya berkembang menjadi **101 eksperimen tercatat**:
 
-Hasil terbaik saat ini bukan lagi baseline Optuna lama, tetapi **incremental `Residual Dilated CNN 1D`** dengan **validation Q8 = 0.7268**, **test Q8 pada CB513 = 0.6878**, dan **test loss = 0.8872**. Ini menggeser tuned `CNN 1D` sebelumnya (`0.6820` test Q8, `0.8967` test loss). `CNN 2D` tetap tertinggal cukup jelas, sehingga jalur riset utama sekarang berpusat pada keluarga model `1D`.
+- `81` run selesai dan punya metrik test lengkap
+- `16` run `Optuna search` hanya menghasilkan validation metric
+- `4` run gagal, tetapi tetap dicatat ke ledger
+
+Hasil resmi terbaik repo saat ini adalah **`p4_07_resdil_b42_ce_none_c320_e24_seed7`** dengan:
+
+- **best validation Q8 = 0.7354**
+- **test Q8 pada CB513 = 0.6926**
+- **test loss = 0.9242**
+
+Itu berarti hasil akhir sekarang naik **+0.0231 absolute** dibanding baseline `CNN 1D` awal.
 
 ---
 
 ## Keputusan Final & Angka Resmi
 
-Sebelum masuk ke narasi per fase, ini keputusan dan angka resmi yang sekarang di-lock:
-
 | Komponen | Keputusan |
-| --- | --- |
+|---|---|
 | Dataset train utama | `cullpdb+profile_5926_filtered.npy.gz` |
 | Dataset test final | `cb513+profile_split1.npy.gz` |
 | Task | masked `Q8` secondary-structure prediction |
-| Input features | `42` kanal per residu |
-| Arsitektur terbaik | `Residual Dilated CNN 1D` |
-| Baseline terbaik | `artifacts/cnn1d/report.json` |
-| Run terbaik saat ini | `artifacts/incremental_resdil_step1/report.json` |
-| Ledger seluruh run | `outputs/reports/run_ledger.csv` |
+| Input features utama | `baseline42` (`21` amino-acid one-hot + `21` profile features) |
+| Arsitektur terbaik | `resdil_cnn1d` |
+| Recipe terbaik | `baseline42 + ce + no class weighting` |
+| Run final terbaik | `p4_07_resdil_b42_ce_none_c320_e24_seed7` |
+| Ledger seluruh eksperimen | [outputs/reports/run_ledger.csv](outputs/reports/run_ledger.csv) |
+| Report final lengkap | [outputs/reports/final_report.md](outputs/reports/final_report.md) |
 
-Metrik resmi saat ini:
+### Metrik resmi
 
-| Run | Best Val Q8 | Test Q8 on CB513 |
-| --- | ---: | ---: |
-| Baseline CNN 1D | 0.7061 | 0.6695 |
-| Baseline CNN 2D | 0.6795 | 0.6427 |
-| Tuned CNN 1D | **0.7203** | **0.6820** |
-| Tuned CNN 2D | 0.6914 | 0.6526 |
-| Incremental ResDil CNN 1D | **0.7268** | **0.6878** |
-
-Status terkini yang paling ringkas tersedia di [outputs/reports/latest_status.md](outputs/reports/latest_status.md).
+| Run | Best Val Q8 | Test Q8 | Test Loss |
+|---|---:|---:|---:|
+| Baseline CNN 1D | 0.7061 | 0.6695 | 0.9079 |
+| Baseline CNN 2D | 0.6795 | 0.6427 | 0.9919 |
+| Tuned CNN 1D | 0.7203 | 0.6820 | 0.8967 |
+| Tuned CNN 2D | 0.6914 | 0.6526 | 0.9664 |
+| Incremental ResDil Step 1 | 0.7268 | 0.6878 | 0.8872 |
+| **Best Final ResDil** | **0.7354** | **0.6926** | **0.9242** |
 
 ---
 
-## Format Dataset Yang Dipakai
+## Perjalanan Eksperimen
 
-File input di workspace:
+### Progres keseluruhan
+
+Grafik pertama merangkum seluruh run yang selesai dan punya metrik test. Setiap titik adalah satu run, dan garis hitam menunjukkan running best.
+
+![Perkembangan test Q8 di seluruh run](outputs/figures/protein_cnn_progress_test_q8.png)
+
+Sumber data: [outputs/figures/data/protein_cnn_progress_test_q8.csv](outputs/figures/data/protein_cnn_progress_test_q8.csv)
+
+Kalau dilihat dari validation, ada beberapa run yang tampak sangat kuat di split internal, tetapi tidak semuanya generalize ke `CB513`. Itu paling jelas terlihat pada branch `extended46`.
+
+![Perkembangan best validation Q8 di seluruh run non-failed](outputs/figures/protein_cnn_progress_best_val_q8.png)
+
+Sumber data: [outputs/figures/data/protein_cnn_progress_best_val_q8.csv](outputs/figures/data/protein_cnn_progress_best_val_q8.csv)
+
+### Dataset & setup evaluasi
+
+File sumber yang dipakai:
 
 - `/workspace/cullpdb+profile_5926_filtered.npy.gz`
 - `/workspace/cb513+profile_split1.npy.gz`
-
-Meskipun ekstensi file berakhiran `.gz`, isi file yang tersedia di environment ini sebenarnya adalah array `.npy` langsung.
 
 Setelah di-reshape, bentuk data menjadi:
 
 - `CullPDB`: `(5365, 700, 57)`
 - `CB513`: `(514, 700, 57)`
 
-Interpretasi praktis yang dipakai di repo ini:
+Setup fitur yang dipakai model:
 
-- input sequence one-hot: `[:, :, 0:21]`
-- label Q8 one-hot: `[:, :, 22:30]`
-- profile features kontinu: `[:, :, 35:56]`
-- padding mask: `[:, :, 56] == 1`
+- `[:, :, 0:21]` = amino-acid one-hot
+- `[:, :, 35:56]` = profile features
+- total input utama = `42` kanal
+- target = `Q8`
+- padding dimask saat menghitung loss dan accuracy
 
-Fitur yang benar-benar dipakai model:
+Statistik ringkas:
 
-- `21` kanal amino-acid one-hot
-- `21` kanal profile kontinu
-- total input = `42` kanal per residu
+| Split | Protein | Valid Residues | Mean Length | Median Length |
+|---|---:|---:|---:|---:|
+| CullPDB total | 5365 | 1154412 | 215.2 | 184 |
+| CB513 test | 514 | 84765 | 164.9 | 132 |
 
-Catatan penting:
+Keputusan evaluasi yang di-lock:
 
-- split validation diambil dari protein-level split internal `CullPDB`
-- `CB513` dipakai sebagai test final, bukan validation selama training
+- validation berasal dari split internal `CullPDB`
+- `CB513` dijaga sebagai **test final**
+- metrik resmi repo ini adalah masked `Q8 accuracy`
 
----
+### Baseline dan tuning
 
-## Perjalanan Eksperimen
+Baseline awal langsung memberi sinyal yang jelas:
 
-### Phase 0 — Validasi dataset & setup eksperimen
+- `CNN 1D` test Q8 = `0.6695`
+- `CNN 2D` test Q8 = `0.6427`
+- gap baseline = **+0.0268** untuk `CNN 1D`
 
-Fase ini memastikan bahwa dataset dapat dibaca dengan benar, reshape ke `(700, 57)` valid, mask padding konsisten, dan split train/validation/test tidak tercampur.
+Setelah `Optuna`:
 
-Keputusan dari fase ini:
+- `CNN 1D`: `0.6695 -> 0.6820` (**+0.0125**)
+- `CNN 2D`: `0.6427 -> 0.6526` (**+0.0099**)
 
-- eksperimen difokuskan ke task `Q8`
-- input memakai `42` fitur, bukan semua `57` kanal mentah
-- `CB513` dijaga sebagai final holdout test
+Tuning membantu kedua model, tetapi tidak mengubah keputusan arsitektur. `CNN 1D` tetap lebih kuat dan lebih layak dijadikan fokus.
 
-Artefak yang relevan:
+### Autoresearch hingga 101 eksperimen
 
-- [protein_cnn/data.py](protein_cnn/data.py)
-- [train.py](train.py)
+Setelah tuning, eksperimen dilanjutkan secara sequential:
 
-### Phase 1 — Baseline `CNN 1D` vs `CNN 2D`
+- `research_incremental`: validasi awal `resdil_cnn1d`
+- `research_stage1`: sweep feature set, objective, weighting, width, dan branch `cnn2d`
+- `research_stage2`: retrain panjang kandidat terbaik
+- `research_stage3_confirm`: konfirmasi multi-seed
+- `research_phase4`: penajaman akhir pada keluarga `ResDil`
 
-Dua baseline pertama dijalankan dengan setup yang sebanding:
+Ringkasan hasil per phase:
 
-- `CNN 1D`: konvolusi sepanjang dimensi sequence
-- `CNN 2D`: input diperlakukan sebagai grid `700 x 42`
+![Ringkasan performa test per phase](outputs/figures/protein_cnn_phase_summary.png)
 
-Hasil baseline:
+Sumber data: [outputs/figures/data/protein_cnn_phase_summary.csv](outputs/figures/data/protein_cnn_phase_summary.csv)
 
-| Model | Epoch | Best Val Q8 | Test Q8 |
-| --- | ---: | ---: | ---: |
-| CNN 1D | 5 | 0.7061 | 0.6695 |
-| CNN 2D | 5 | 0.6795 | 0.6427 |
+Ringkasan per keluarga model:
 
-Temuan utama:
+![Perbandingan keluarga model](outputs/figures/protein_cnn_model_family_summary.png)
 
-- `CNN 1D` sudah unggul sejak baseline awal
-- `CNN 2D` lebih lambat dan lebih lemah
-- gap performa tidak kecil, jadi `CNN 1D` layak dijadikan fokus tuning
+Sumber data: [outputs/figures/data/protein_cnn_model_family_summary.csv](outputs/figures/data/protein_cnn_model_family_summary.csv)
 
-Artefak baseline:
+Yang paling penting dari dua grafik itu:
 
-- [artifacts/cnn1d/report.json](artifacts/cnn1d/report.json)
-- [artifacts/cnn1d/history.jsonl](artifacts/cnn1d/history.jsonl)
-- [artifacts/cnn2d/report.json](artifacts/cnn2d/report.json)
-- [artifacts/cnn2d/history.jsonl](artifacts/cnn2d/history.jsonl)
+- `cnn2d` tidak pernah mendekati ceiling keluarga `1D`
+- `cnn1d` menjadi baseline kuat
+- `resdil_cnn1d` mengambil alih posisi terbaik repo
 
-### Phase 2 — Hyperparameter tuning
+### Kandidat terbaik dan stabilitas seed
 
-Fase ini menjalankan `Optuna` pada kedua arsitektur dengan budget yang lebih serius:
+Family yang benar-benar sehat sepanjang repo adalah:
 
-- search: `8 trials`
-- search per trial: `6 epoch`
-- retrain final best params: `18 epoch`
+- `model = resdil_cnn1d`
+- `feature_set = baseline42`
+- `loss = ce`
+- `class_weighting = none`
 
-#### Tuned CNN 1D
+Saat kandidat ini diuji lintas seed dan schedule, hasilnya tetap rapat di area atas:
 
-Best params:
+![Stabilitas kandidat ResDil baseline42 + CE + no weighting](outputs/figures/protein_cnn_resdil_candidate_stability.png)
 
-- `batch_size = 16`
-- `lr = 0.0007645573`
-- `weight_decay = 3.715e-06`
-- `dropout = 0.1677`
-- `width = 192`
+Sumber data: [outputs/figures/data/protein_cnn_resdil_candidate_stability.csv](outputs/figures/data/protein_cnn_resdil_candidate_stability.csv)
 
-Hasil:
+Top-5 run repo saat ini:
 
-- best validation dari search: `0.7121`
-- best validation setelah final retrain: `0.7203`
-- final test Q8: `0.6820`
+| Rank | Run | Phase | Model | Best Val Q8 | Test Q8 | Test Loss |
+|---:|---|---|---|---:|---:|---:|
+| 1 | `p4_07_resdil_b42_ce_none_c320_e24_seed7` | Research Phase 4 | ResDil CNN 1D | 0.7354 | 0.6926 | 0.9242 |
+| 2 | `s2_01_s1_06_resdil_cnn1d_baseline42_ce_none_c320` | Research Stage 2 | ResDil CNN 1D | 0.7303 | 0.6919 | 0.9327 |
+| 3 | `p4_01_resdil_b42_ce_none_c320_e18` | Research Phase 4 | ResDil CNN 1D | 0.7303 | 0.6919 | 0.9327 |
+| 4 | `s3_02_s1_02_resdil_cnn1d_baseline42_ce_none_c192_seed13` | Research Stage 3 | ResDil CNN 1D | 0.7307 | 0.6917 | 0.8843 |
+| 5 | `s3_03_s1_04_resdil_cnn1d_baseline42_ce_none_c256_seed21` | Research Stage 3 | ResDil CNN 1D | 0.7306 | 0.6913 | 0.9025 |
 
-Ini berarti tuning `CNN 1D` memberi gain nyata terhadap baseline:
+### Kurva training representatif
 
-- `+0.0143` absolute pada validation (`0.7061 -> 0.7203`)
-- `+0.0125` absolute pada test (`0.6695 -> 0.6820`)
+Grafik ini memperlihatkan pergeseran baseline → tuned → best final.
 
-Artefak:
+![Kurva training representatif](outputs/figures/protein_cnn_training_curves.png)
 
-- [artifacts/optuna_cnn1d/optuna_report.json](artifacts/optuna_cnn1d/optuna_report.json)
-- [artifacts/optuna_cnn1d/trial_logs.jsonl](artifacts/optuna_cnn1d/trial_logs.jsonl)
-- [artifacts/optuna_cnn1d/final_history.jsonl](artifacts/optuna_cnn1d/final_history.jsonl)
+Sumber data: [outputs/figures/data/protein_cnn_training_curves.csv](outputs/figures/data/protein_cnn_training_curves.csv)
 
-#### Tuned CNN 2D
+### Loss vs accuracy
 
-Best params:
+Grafik ini penting untuk membaca eksperimen yang sempat terlihat “loss-nya kecil” tetapi akurasinya tidak menang.
 
-- `batch_size = 16`
-- `lr = 0.0011606166`
-- `weight_decay = 1.647e-05`
-- `dropout = 0.1902`
+![Hubungan test loss vs test Q8](outputs/figures/protein_cnn_test_loss_vs_q8.png)
 
-Hasil:
+Sumber data: [outputs/figures/data/protein_cnn_test_loss_vs_q8.csv](outputs/figures/data/protein_cnn_test_loss_vs_q8.csv)
 
-- best validation dari search: `0.6815`
-- best validation setelah final retrain: `0.6914`
-- final test Q8: `0.6526`
+Pesan utamanya:
 
-Tuning `CNN 2D` memang meningkatkan hasil baseline, tetapi kenaikannya tidak cukup untuk menyalip `CNN 1D`.
-
-Artefak:
-
-- [artifacts/optuna_cnn2d/optuna_report.json](artifacts/optuna_cnn2d/optuna_report.json)
-- [artifacts/optuna_cnn2d/trial_logs.jsonl](artifacts/optuna_cnn2d/trial_logs.jsonl)
-- [artifacts/optuna_cnn2d/final_history.jsonl](artifacts/optuna_cnn2d/final_history.jsonl)
-
-### Phase 3 — Incremental architecture improvement
-
-Setelah ruang hyperparameter dasar mulai plateau, eksperimen dilanjutkan secara incremental ke arsitektur `Residual Dilated CNN 1D`. Tujuannya bukan mengganti problem setup, tetapi memperkuat receptive field sequence sambil tetap mempertahankan bias induktif model 1D.
-
-Run terbaik saat ini:
-
-- model: `resdil_cnn1d`
-- feature set: `baseline42`
-- loss: `cross_entropy`
-- class weighting: `none`
-- channels: `256`
-- epochs: `12`
-
-Hasil:
-
-- best validation Q8: `0.7268`
-- final test Q8: `0.6878`
-- final test loss: `0.8872`
-
-Interpretasi praktis:
-
-- kenaikan `test Q8` terhadap tuned `CNN 1D`: `+0.0058`
-- penurunan `test loss` terhadap tuned `CNN 1D`: `0.8967 -> 0.8872`
-- ini memberi sinyal bahwa arsitektur sequence 1D yang lebih dalam masih punya ruang perbaikan, sementara tuning hiperparameter murni mulai jenuh
-
-Artefak:
-
-- [artifacts/incremental_resdil_step1/report.json](artifacts/incremental_resdil_step1/report.json)
-- [artifacts/incremental_resdil_step1/history.jsonl](artifacts/incremental_resdil_step1/history.jsonl)
+- loss lintas family objective **tidak boleh** dibandingkan mentah
+- `sqrt_inverse` dan beberapa varian focal memang bisa terlihat “loss kecil”
+- tetapi model resmi tetap harus dipilih dengan `test_q8`, bukan loss semata
 
 ---
 
 ## Insight Utama
 
-Kesimpulan paling penting dari seluruh perjalanan eksperimen:
-
-1. Keluarga model `1D` unggul sejak baseline, tetap unggul setelah tuning, dan masih membaik setelah arsitektur diperkuat secara incremental.
-2. Hyperparameter tuning memang membantu kedua model, tetapi **membantu `CNN 1D` jauh lebih efektif** daripada `CNN 2D`.
-3. `CNN 2D` tidak gagal total, tetapi cost/performance-nya kalah jelas dari model sequence `1D`.
-4. Bottleneck eksperimen bukan lagi “1D vs 2D”; keputusan itu sudah cukup jelas. Pusat optimasi sekarang adalah **bagaimana memperkuat model 1D sambil menekan loss**.
-5. Langkah berikutnya yang paling rasional adalah sweep berjenjang pada `cnn1d` dan `resdil_cnn1d`, evaluasi multi-seed, serta analisis kelas dan loss curve yang lebih detail.
-
-Secara praktis:
-
-- jika butuh model terbaik saat ini: pilih `incremental_resdil_step1`
-- jika butuh baseline yang lebih sederhana: pakai `CNN 1D tuned`
-- jika butuh pembanding arsitektur: simpan `CNN 2D tuned` sebagai runner-up historis
-- jika butuh fokus eksperimen berikutnya: teruskan hanya keluarga model `1D`
+1. **`CNN 1D` menang jelas atas `CNN 2D`.** Ini tidak berubah dari baseline sampai akhir repo.
+2. **`Optuna` membantu, tetapi tidak cukup sendirian.** Gain berikutnya datang dari perubahan arsitektur ke `resdil_cnn1d`.
+3. **`baseline42` lebih sehat daripada `extended46` untuk generalisasi.** Beberapa run `extended46` mencapai validation Q8 sangat tinggi, tetapi test Q8 justru jatuh.
+4. **`ce + no class weighting` adalah jalur terbaik repo.** Family ini mendominasi posisi atas ledger final.
+5. **Phase 4 menutup eksperimen dengan hasil resmi terbaik.** Winner final saat ini adalah `p4_07`.
 
 ---
 
 ## Audit Trail
 
-Repo ini sengaja menyimpan jejak eksperimen dalam format yang mudah dibaca ulang.
+Artefak utama:
 
-Sumber audit trail utama:
+- Ledger final: [outputs/reports/run_ledger.csv](outputs/reports/run_ledger.csv)
+- Report final lengkap: [outputs/reports/final_report.md](outputs/reports/final_report.md)
+- Status terbaru: [outputs/reports/latest_status.md](outputs/reports/latest_status.md)
+- Summary riset: [outputs/reports/research_summary.json](outputs/reports/research_summary.json)
+- Summary phase 4: [outputs/reports/phase4_summary.json](outputs/reports/phase4_summary.json)
 
-- Ledger seluruh run: [outputs/reports/run_ledger.csv](outputs/reports/run_ledger.csv)
-- Status ringkas terbaru: [outputs/reports/latest_status.md](outputs/reports/latest_status.md)
-- Ringkasan baseline: [artifacts/summary.json](artifacts/summary.json)
+Artefak model representatif:
 
-Log detail yang bisa dianalisis ulang:
-
-- baseline `CNN 1D`: [artifacts/cnn1d/history.jsonl](artifacts/cnn1d/history.jsonl)
-- baseline `CNN 2D`: [artifacts/cnn2d/history.jsonl](artifacts/cnn2d/history.jsonl)
-- tuning trials `CNN 1D`: [artifacts/optuna_cnn1d/trial_logs.jsonl](artifacts/optuna_cnn1d/trial_logs.jsonl)
-- tuning final `CNN 1D`: [artifacts/optuna_cnn1d/final_history.jsonl](artifacts/optuna_cnn1d/final_history.jsonl)
-- tuning trials `CNN 2D`: [artifacts/optuna_cnn2d/trial_logs.jsonl](artifacts/optuna_cnn2d/trial_logs.jsonl)
-- tuning final `CNN 2D`: [artifacts/optuna_cnn2d/final_history.jsonl](artifacts/optuna_cnn2d/final_history.jsonl)
-- incremental `ResDil CNN 1D`: [artifacts/incremental_resdil_step1/history.jsonl](artifacts/incremental_resdil_step1/history.jsonl)
+- Baseline CNN 1D: [artifacts/cnn1d/report.json](artifacts/cnn1d/report.json)
+- Baseline CNN 2D: [artifacts/cnn2d/report.json](artifacts/cnn2d/report.json)
+- Tuned CNN 1D: [artifacts/optuna_cnn1d/optuna_report.json](artifacts/optuna_cnn1d/optuna_report.json)
+- Tuned CNN 2D: [artifacts/optuna_cnn2d/optuna_report.json](artifacts/optuna_cnn2d/optuna_report.json)
+- Best final run: [artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json](artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json)
 
 ---
 
-## Cara Menjalankan
+## Cara Reproduksi
 
-Contoh baseline:
+Baseline `CNN 1D`:
 
 ```bash
 python train.py \
@@ -258,10 +228,11 @@ python train.py \
   --epochs 5 \
   --batch-size 32 \
   --lr 1e-3 \
+  --weight-decay 1e-4 \
   --output-dir artifacts/cnn1d
 ```
 
-Contoh tuning:
+Optuna `CNN 1D`:
 
 ```bash
 python tune_optuna.py \
@@ -274,30 +245,4 @@ python tune_optuna.py \
   --output-dir artifacts/optuna_cnn1d
 ```
 
-Untuk pembanding 2D, cukup ganti `--model cnn1d` menjadi `--model cnn2d`.
-
----
-
-## Kesimpulan
-
-Eksperimen ini sudah menghasilkan satu baseline yang jelas, terukur, dan bisa ditelusuri:
-
-- baseline terbaik: `CNN 1D`
-- model terbaik saat ini: `incremental_resdil_step1`
-- skor test terbaik di `CB513`: **0.6878 Q8**
-
-Repo ini belum berhenti di “model jalan”. Repo ini sekarang sudah punya:
-
-- baseline comparison
-- hyperparameter tuning
-- final best-run selection
-- ledger eksperimen
-- log training lengkap
-- tautan audit trail yang bisa diikuti ulang
-
-Untuk fase berikutnya, jalur paling kuat adalah:
-
-1. lanjutkan sweep berjenjang pada `cnn1d` dan `resdil_cnn1d`
-2. tambahkan evaluasi multi-seed
-3. tambahkan analisis per kelas dan confusion pattern
-4. baru setelah itu pertimbangkan eksperimen yang lebih jauh seperti distillation
+README ini sengaja diposisikan sebagai ringkasan strategis. Analisis lengkap, tabel top-10, pembahasan run gagal, dan interpretasi detail ada di [outputs/reports/final_report.md](outputs/reports/final_report.md).
