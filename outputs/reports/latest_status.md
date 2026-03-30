@@ -1,6 +1,6 @@
 # Latest Status
 
-Updated: 2026-03-30T14:31:59.604156+00:00
+Updated: 2026-03-30T15:15:27.630523+00:00
 
 ## Current Best
 
@@ -12,11 +12,11 @@ Updated: 2026-03-30T14:31:59.604156+00:00
 
 ## Runner-up
 
-- Run: `s2_02_s1_02_resdil_cnn1d_baseline42_ce_none_c192`
+- Run: `s3_01_s1_06_resdil_cnn1d_baseline42_ce_none_c320_seed13`
 - Model: `resdil_cnn1d`
-- Best validation Q8: `0.7264`
-- Test Q8 on CB513: `0.6879`
-- Test loss: `0.9243`
+- Best validation Q8: `0.7317`
+- Test Q8 on CB513: `0.6901`
+- Test loss: `0.8822`
 
 ## Notes
 
