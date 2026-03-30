@@ -1,0 +1,1 @@
+"""Protein CNN baseline package."""
