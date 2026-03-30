@@ -77,8 +77,15 @@ def sortable_row(row: dict) -> dict | None:
 
 
 def rank_rows(rows: Iterable[dict]) -> list[dict]:
-    ranked = [row for row in rows if sortable_row(row) is not None]
-    ranked.sort(key=lambda x: (x["test_q8"], -x["best_val_q8"], -x["test_loss"]), reverse=True)
+    ranked = []
+    for row in rows:
+        normalized = sortable_row(row)
+        if normalized is None:
+            continue
+        merged = dict(row)
+        merged.update(normalized)
+        ranked.append(merged)
+    ranked.sort(key=lambda x: (x["test_q8"], x["best_val_q8"], -x["test_loss"]), reverse=True)
     return ranked
 
 

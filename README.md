@@ -283,8 +283,8 @@ Untuk pembanding 2D, cukup ganti `--model cnn1d` menjadi `--model cnn2d`.
 Eksperimen ini sudah menghasilkan satu baseline yang jelas, terukur, dan bisa ditelusuri:
 
 - baseline terbaik: `CNN 1D`
-- model terbaik saat ini: `tuned CNN 1D`
-- skor test terbaik di `CB513`: **0.6820 Q8**
+- model terbaik saat ini: `incremental_resdil_step1`
+- skor test terbaik di `CB513`: **0.6878 Q8**
 
 Repo ini belum berhenti di “model jalan”. Repo ini sekarang sudah punya:
 
@@ -297,7 +297,7 @@ Repo ini belum berhenti di “model jalan”. Repo ini sekarang sudah punya:
 
 Untuk fase berikutnya, jalur paling kuat adalah:
 
-1. lanjutkan tuning hanya pada `CNN 1D`
+1. lanjutkan sweep berjenjang pada `cnn1d` dan `resdil_cnn1d`
 2. tambahkan evaluasi multi-seed
 3. tambahkan analisis per kelas dan confusion pattern
 4. baru setelah itu pertimbangkan eksperimen yang lebih jauh seperti distillation
