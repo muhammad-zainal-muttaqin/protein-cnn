@@ -1,0 +1,279 @@
+{
+  "config": {
+    "train_path": "/workspace/cullpdb+profile_5926_filtered.npy.gz",
+    "test_path": "/workspace/cb513+profile_split1.npy.gz",
+    "model": "resdil_cnn1d",
+    "feature_set": "baseline42",
+    "epochs": 12,
+    "batch_size": 16,
+    "lr": 0.00075,
+    "weight_decay": 4e-06,
+    "dropout": 0.17,
+    "channels": 256,
+    "loss": "ce",
+    "class_weighting": "none",
+    "focal_gamma": 1.5,
+    "val_fraction": 0.2,
+    "seed": 42,
+    "output_dir": "artifacts/incremental_resdil_step1"
+  },
+  "device": "cuda",
+  "dataset_summary": {
+    "train_all": {
+      "num_proteins": 5365,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 1154412,
+      "min_length": 12,
+      "max_length": 696,
+      "mean_length": 215.17465051258154,
+      "median_length": 184.0,
+      "label_counts": [
+        221211,
+        11832,
+        250804,
+        45155,
+        212,
+        399879,
+        95133,
+        130186
+      ]
+    },
+    "train": {
+      "num_proteins": 4292,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 921481,
+      "min_length": 15,
+      "max_length": 696,
+      "mean_length": 214.69734389561975,
+      "median_length": 184.0,
+      "label_counts": [
+        176711,
+        9420,
+        199405,
+        35829,
+        181,
+        320067,
+        75972,
+        103896
+      ]
+    },
+    "val": {
+      "num_proteins": 1073,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 232931,
+      "min_length": 12,
+      "max_length": 693,
+      "mean_length": 217.0838769804287,
+      "median_length": 185.0,
+      "label_counts": [
+        44500,
+        2412,
+        51399,
+        9326,
+        31,
+        79812,
+        19161,
+        26290
+      ]
+    },
+    "test": {
+      "num_proteins": 514,
+      "max_len": 700,
+      "num_features": 42,
+      "num_valid_residues": 84765,
+      "min_length": 20,
+      "max_length": 700,
+      "mean_length": 164.9124513618677,
+      "median_length": 132.0,
+      "label_counts": [
+        17920,
+        1181,
+        18016,
+        3132,
+        30,
+        26157,
+        8316,
+        10013
+      ]
+    }
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "seconds": 16.436009883880615,
+      "train": {
+        "loss": 0.9944953753017258,
+        "q8_accuracy": 0.6440219603008634,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.8614877491305181,
+        "q8_accuracy": 0.6877100944056395,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 2,
+      "seconds": 15.868316173553467,
+      "train": {
+        "loss": 0.8465099532367675,
+        "q8_accuracy": 0.6934120182619067,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.8620325201689694,
+        "q8_accuracy": 0.687538369731809,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 3,
+      "seconds": 15.92529582977295,
+      "train": {
+        "loss": 0.804283155704498,
+        "q8_accuracy": 0.7081611015311222,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.9008113051415182,
+        "q8_accuracy": 0.6821805599082991,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 4,
+      "seconds": 15.989684343338013,
+      "train": {
+        "loss": 0.7774066742385124,
+        "q8_accuracy": 0.7179301580824781,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7972584215268195,
+        "q8_accuracy": 0.7105451829082432,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 5,
+      "seconds": 15.944671154022217,
+      "train": {
+        "loss": 0.7501532138336714,
+        "q8_accuracy": 0.7268842222465791,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.8238436123388969,
+        "q8_accuracy": 0.702585744276202,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 6,
+      "seconds": 15.954735517501831,
+      "train": {
+        "loss": 0.7307455272708512,
+        "q8_accuracy": 0.733483381643246,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7970025155985855,
+        "q8_accuracy": 0.7110775293971175,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 7,
+      "seconds": 15.978318452835083,
+      "train": {
+        "loss": 0.707207878557766,
+        "q8_accuracy": 0.7414998247386544,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7689396148811792,
+        "q8_accuracy": 0.7217888559272918,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 8,
+      "seconds": 15.957035779953003,
+      "train": {
+        "loss": 0.6834284858027173,
+        "q8_accuracy": 0.7495618466360131,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.787587277615634,
+        "q8_accuracy": 0.7152203871532772,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 9,
+      "seconds": 15.970692157745361,
+      "train": {
+        "loss": 0.6621398746195188,
+        "q8_accuracy": 0.7571952107531246,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.8111448027488619,
+        "q8_accuracy": 0.7119404458831156,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 10,
+      "seconds": 15.954894781112671,
+      "train": {
+        "loss": 0.6422500434053364,
+        "q8_accuracy": 0.7639343621843532,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7603617587230319,
+        "q8_accuracy": 0.7268418544547527,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 11,
+      "seconds": 15.969214916229248,
+      "train": {
+        "loss": 0.6158779618863837,
+        "q8_accuracy": 0.7731239168251977,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7766894845056962,
+        "q8_accuracy": 0.7224414096878474,
+        "tokens": 232931
+      }
+    },
+    {
+      "epoch": 12,
+      "seconds": 15.955632448196411,
+      "train": {
+        "loss": 0.591411982462185,
+        "q8_accuracy": 0.7812250062670852,
+        "tokens": 921481
+      },
+      "val": {
+        "loss": 0.7963945089113323,
+        "q8_accuracy": 0.7252319356375923,
+        "tokens": 232931
+      }
+    }
+  ],
+  "best_val_q8_accuracy": 0.7268418544547527,
+  "test": {
+    "loss": 0.887168005560096,
+    "q8_accuracy": 0.6877720757388073,
+    "tokens": 84765
+  }
+}
