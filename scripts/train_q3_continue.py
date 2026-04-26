@@ -41,8 +41,11 @@ TRIALS_REMAINING = 2
 SEARCH_EPOCHS = 8
 FINAL_EPOCHS = 40
 
-BASE_DIR = "./data"
-OUTPUT_ROOT = "./output"
+BASE_DIR = str(Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) / "data")
+(BASE_DIR if Path(BASE_DIR).exists() else Path("/workspace/data")).mkdir(parents=True, exist_ok=True)
+if not Path(BASE_DIR).exists():
+    BASE_DIR = "/workspace/data"
+OUTPUT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "training_artifacts")
 RUN_NAME = f"rescnn_bilstm_attention_q3_continue_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 OUTPUT_DIR = os.path.join(OUTPUT_ROOT, RUN_NAME)
 TRAIN_FILE = "cullpdb+profile_5926_filtered.npy.gz"

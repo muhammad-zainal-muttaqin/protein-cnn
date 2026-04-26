@@ -1,0 +1,26 @@
+{
+  "keras_masked_accuracy": 0.8244080543518066,
+  "sklearn_masked_accuracy": 0.824408004446915,
+  "balanced_accuracy": 0.7016951998436053,
+  "precision_macro": 0.5040801026300012,
+  "recall_macro": 0.7016951998436053,
+  "f1_macro": 0.4543803117871501,
+  "auc_ovr": 0.9814241702918429,
+  "test_loss": 0.045323822647333145,
+  "best_val_macro_f1": 0.5033117885914113,
+  "best_params": {
+    "filters": 128,
+    "conv_blocks": 4,
+    "kernel_size": 5,
+    "lstm_units": 64,
+    "attention_heads": 2,
+    "attention_key_dim": 24,
+    "dense_units": 96,
+    "dropout": 0.254213135775041,
+    "weight_decay": 4.7312450386894165e-05,
+    "lr": 0.0008549138916301651,
+    "focal_gamma": 1.726190894118447,
+    "label_smoothing": 0.03484141203444936,
+    "batch_size": 8
+  }
+}
