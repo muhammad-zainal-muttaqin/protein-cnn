@@ -1,0 +1,15 @@
+{
+  "base_dir": "data",
+  "output_root": "./output",
+  "output_dir": "./output/rescnn_bilstm_attention_q3_20260426_083415",
+  "train_file": "cullpdb+profile_5926_filtered.npy.gz",
+  "test_file": "cb513+profile_split1.npy.gz",
+  "seed": 42,
+  "max_len": 700,
+  "n_classes": 3,
+  "trials": 20,
+  "search_epochs": 8,
+  "final_epochs": 40,
+  "val_fraction": 0.2,
+  "created_at": "2026-04-26T08:35:28"
+}
