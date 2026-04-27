@@ -6,39 +6,6 @@ Repo juga mencakup eksperimen **Q8** (8-class) yang lebih awal — 101 run tersw
 
 ---
 
-## Hasil Final Q3 — ResCNN + BiLSTM + Attention (40 Epoch)
-
-Model terbaik dari percobaan ini adalah **ResCNN + BiLSTM + Attention** yang dilatih 40 epoch menggunakan hyperparameter terbaik dari 18 Optuna trials.
-
-| Metric | Nilai |
-|---|---:|
-| **Accuracy** | **0.8244** |
-| Balanced Accuracy | 0.7017 |
-| **Precision (macro)** | **0.5041** |
-| **Recall (macro)** | **0.7017** |
-| **F1 Score (macro)** | **0.4544** |
-| **AUC (OVR)** | **0.9814** |
-| Test Loss | 0.0453 |
-| Best Val Macro-F1 | 0.5033 |
-
-### Per-Class Performance (CB513)
-
-| Class | Precision | Recall | F1 | Support |
-|---|---:|---:|---:|---:|
-| 0 — Helix | 1.0000 | 0.8492 | 0.9184 | 340,699 |
-| 1 — Sheet | 0.4937 | 0.3482 | 0.4084 | 17,920 |
-| 2 — Coil | 0.0185 | 0.9077 | 0.0363 | 1,181 |
-
-> Helix hampir sempurna karena dominasi distribusi (~95% residues). Macro-F1 rendah karena imbalance ekstrem — Helix 340k vs Coil 1.2k.
-
-### Kurva Training
-
-![Training curves Q3 final](results/training/training_curves.png)
-
-![Training curves detail final run](results/training/final_train_20260426_131406/training_curves.png)
-
----
-
 ## Perjalanan Eksperimen Q3
 
 Empat percobaan dijalankan secara bertahap, masing-masing memperbaiki yang sebelumnya.
@@ -95,11 +62,41 @@ Menambahkan Optuna tuning pada arsitektur CNN+BiLSTM. Dilatih 40 epoch penuh, di
 
 Notebook: [`notebooks/results/Protein_Q3_Balanced_CNNBiLSTM (Optuna).ipynb`](<notebooks/results/Protein_Q3_Balanced_CNNBiLSTM (Optuna).ipynb>)
 
-### Step 4 (Final) — ResCNN + BiLSTM + Attention + Optuna (40 Epoch)
+---
 
-Arsitektur diperluas dengan Residual Conv blocks dan Multi-Head Attention. Optuna menjalankan **18 dari 20 trials** (8 epoch/trial), menemukan konfigurasi terbaik pada **Trial 15** (val macro-F1 = 0.5040). Final training 40 epoch.
+## ⭐ Step 4 (Final) — ResCNN + BiLSTM + Attention + Optuna (40 Epoch)
 
-#### Konfigurasi Terbaik (Trial 15)
+Arsitektur diperluas dengan **Residual Conv blocks + Multi-Head Attention**. Optuna menjalankan **18 dari 20 trials** (8 epoch/trial, TPE sampler), menemukan konfigurasi terbaik pada **Trial 15** (val macro-F1 = **0.5040**). Final training **40 epoch** pada CullPDB, dievaluasi di CB513.
+
+### Metrik Final CB513
+
+| Metric | Nilai |
+|---|---:|
+| **Accuracy** | **0.8244** |
+| Balanced Accuracy | 0.7017 |
+| **Precision (macro)** | **0.5041** |
+| **Recall (macro)** | **0.7017** |
+| **F1 Score (macro)** | **0.4544** |
+| **AUC (OVR)** | **0.9814** |
+| Test Loss | 0.0453 |
+| Best Val Macro-F1 | 0.5033 |
+| Epochs | 40 |
+
+### Per-Class Performance CB513
+
+| Class | Precision | Recall | F1 | Support |
+|---|---:|---:|---:|---:|
+| 0 — Helix | 1.0000 | 0.8492 | 0.9184 | 340,699 |
+| 1 — Sheet | 0.4937 | 0.3482 | 0.4084 | 17,920 |
+| 2 — Coil | 0.0185 | 0.9077 | 0.0363 | 1,181 |
+
+### Kurva Training (Akurasi & Loss)
+
+![Training curves Q3 final run](results/training/training_curves.png)
+
+![Training curves detail 20260426](results/training/final_train_20260426_131406/training_curves.png)
+
+### Konfigurasi Hyperparameter (Trial 15 — Best Optuna)
 
 | Hyperparameter | Nilai |
 |---|---|
@@ -111,12 +108,13 @@ Arsitektur diperluas dengan Residual Conv blocks dan Multi-Head Attention. Optun
 | Attention key dim | 24 |
 | Dense units | 96 |
 | Dropout | 0.2542 |
+| Weight decay | 4.73e-05 |
 | Learning rate | 8.55e-04 |
 | Focal gamma | 1.726 |
 | Label smoothing | 0.0348 |
 | Batch size | 8 |
 
-Detail 18 trial: [`logs/TRIAL_RESULTS.md`](logs/TRIAL_RESULTS.md)  
+Detail 18 trial Optuna: [`logs/TRIAL_RESULTS.md`](logs/TRIAL_RESULTS.md)  
 Notebook: [`notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb`](notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb)
 
 ---
