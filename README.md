@@ -29,8 +29,8 @@ Itu berarti hasil akhir sekarang naik **+0.0231 absolute** dibanding baseline `C
 | Arsitektur terbaik | `resdil_cnn1d` |
 | Recipe terbaik | `baseline42 + ce + no class weighting` |
 | Run final terbaik | `p4_07_resdil_b42_ce_none_c320_e24_seed7` |
-| Ledger seluruh eksperimen | [outputs/reports/run_ledger.csv](outputs/reports/run_ledger.csv) |
-| Report final lengkap | [outputs/reports/final_report.md](outputs/reports/final_report.md) |
+| Ledger seluruh eksperimen | [results/reports/run_ledger.csv](results/reports/run_ledger.csv) |
+| Report final lengkap | [results/reports/final_report.md](results/reports/final_report.md) |
 
 ### Metrik resmi
 
@@ -51,15 +51,15 @@ Itu berarti hasil akhir sekarang naik **+0.0231 absolute** dibanding baseline `C
 
 Grafik pertama merangkum seluruh run yang selesai dan punya metrik test. Setiap titik adalah satu run, dan garis hitam menunjukkan running best.
 
-![Perkembangan test Q8 di seluruh run](outputs/figures/protein_cnn_progress_test_q8.png)
+![Perkembangan test Q8 di seluruh run](results/figures/protein_cnn_progress_test_q8.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_progress_test_q8.csv](outputs/figures/data/protein_cnn_progress_test_q8.csv)
+Sumber data: [results/figures/data/protein_cnn_progress_test_q8.csv](results/figures/data/protein_cnn_progress_test_q8.csv)
 
 Kalau dilihat dari validation, ada beberapa run yang tampak sangat kuat di split internal, tetapi tidak semuanya generalize ke `CB513`. Itu paling jelas terlihat pada branch `extended46`.
 
-![Perkembangan best validation Q8 di seluruh run non-failed](outputs/figures/protein_cnn_progress_best_val_q8.png)
+![Perkembangan best validation Q8 di seluruh run non-failed](results/figures/protein_cnn_progress_best_val_q8.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_progress_best_val_q8.csv](outputs/figures/data/protein_cnn_progress_best_val_q8.csv)
+Sumber data: [results/figures/data/protein_cnn_progress_best_val_q8.csv](results/figures/data/protein_cnn_progress_best_val_q8.csv)
 
 ### Dataset & setup evaluasi
 
@@ -121,15 +121,15 @@ Setelah tuning, eksperimen dilanjutkan secara sequential:
 
 Ringkasan hasil per phase:
 
-![Ringkasan performa test per phase](outputs/figures/protein_cnn_phase_summary.png)
+![Ringkasan performa test per phase](results/figures/protein_cnn_phase_summary.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_phase_summary.csv](outputs/figures/data/protein_cnn_phase_summary.csv)
+Sumber data: [results/figures/data/protein_cnn_phase_summary.csv](results/figures/data/protein_cnn_phase_summary.csv)
 
 Ringkasan per keluarga model:
 
-![Perbandingan keluarga model](outputs/figures/protein_cnn_model_family_summary.png)
+![Perbandingan keluarga model](results/figures/protein_cnn_model_family_summary.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_model_family_summary.csv](outputs/figures/data/protein_cnn_model_family_summary.csv)
+Sumber data: [results/figures/data/protein_cnn_model_family_summary.csv](results/figures/data/protein_cnn_model_family_summary.csv)
 
 Yang paling penting dari dua grafik itu:
 
@@ -148,9 +148,9 @@ Family yang benar-benar sehat sepanjang repo adalah:
 
 Saat kandidat ini diuji lintas seed dan schedule, hasilnya tetap rapat di area atas:
 
-![Stabilitas kandidat ResDil baseline42 + CE + no weighting](outputs/figures/protein_cnn_resdil_candidate_stability.png)
+![Stabilitas kandidat ResDil baseline42 + CE + no weighting](results/figures/protein_cnn_resdil_candidate_stability.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_resdil_candidate_stability.csv](outputs/figures/data/protein_cnn_resdil_candidate_stability.csv)
+Sumber data: [results/figures/data/protein_cnn_resdil_candidate_stability.csv](results/figures/data/protein_cnn_resdil_candidate_stability.csv)
 
 Top-5 run repo saat ini:
 
@@ -166,23 +166,54 @@ Top-5 run repo saat ini:
 
 Grafik ini memperlihatkan pergeseran baseline → tuned → best final.
 
-![Kurva training representatif](outputs/figures/protein_cnn_training_curves.png)
+![Kurva training representatif](results/figures/protein_cnn_training_curves.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_training_curves.csv](outputs/figures/data/protein_cnn_training_curves.csv)
+Sumber data: [results/figures/data/protein_cnn_training_curves.csv](results/figures/data/protein_cnn_training_curves.csv)
 
 ### Loss vs accuracy
 
 Grafik ini penting untuk membaca eksperimen yang sempat terlihat “loss-nya kecil” tetapi akurasinya tidak menang.
 
-![Hubungan test loss vs test Q8](outputs/figures/protein_cnn_test_loss_vs_q8.png)
+![Hubungan test loss vs test Q8](results/figures/protein_cnn_test_loss_vs_q8.png)
 
-Sumber data: [outputs/figures/data/protein_cnn_test_loss_vs_q8.csv](outputs/figures/data/protein_cnn_test_loss_vs_q8.csv)
+Sumber data: [results/figures/data/protein_cnn_test_loss_vs_q8.csv](results/figures/data/protein_cnn_test_loss_vs_q8.csv)
 
 Pesan utamanya:
 
 - loss lintas family objective **tidak boleh** dibandingkan mentah
 - `sqrt_inverse` dan beberapa varian focal memang bisa terlihat “loss kecil”
 - tetapi model resmi tetap harus dipilih dengan `test_q8`, bukan loss semata
+
+---
+
+## Q3 ResCNN+BiLSTM+Attention — Hasil Final
+
+Model lanjutan berbasis **ResCNN + BiLSTM + Attention** dilatih pada task **Q3** (Helix / Sheet / Coil) menggunakan arsitektur terbaik dari Optuna trial 15 (val macro-F1 = 0.5040), selama 30 epoch pada CullPDB, diuji pada CB513.
+
+### Metrik Terbaik (Epoch 12/30 — Best Val Loss)
+
+| Metric | Nilai |
+|---|---:|
+| Accuracy | **0.8139** |
+| Precision (macro) | 0.4195 |
+| Recall (macro) | 0.6177 |
+| F1 Score (macro) | 0.4313 |
+| AUC (OVR) | **0.9484** |
+| Loss | 0.0120 |
+
+Sumber: [`notebooks/results/Protein_1D_Q3.ipynb`](notebooks/results/Protein_1D_Q3.ipynb)
+
+### Kurva Training — Q3 ResCNN+BiLSTM+Attention (Final Run)
+
+Grafik akurasi dan loss seluruh epoch (40 epoch, best params Trial 15):
+
+![Training curves final Q3](results/training/training_curves.png)
+
+Kurva detail per-run final:
+
+![Training curves final train 20260426](results/training/final_train_20260426_131406/training_curves.png)
+
+Artefak lengkap: [`results/training/final_train_20260426_131406/`](results/training/final_train_20260426_131406/)
 
 ---
 
@@ -200,19 +231,19 @@ Pesan utamanya:
 
 Artefak utama:
 
-- Ledger final: [outputs/reports/run_ledger.csv](outputs/reports/run_ledger.csv)
-- Report final lengkap: [outputs/reports/final_report.md](outputs/reports/final_report.md)
-- Status terbaru: [outputs/reports/latest_status.md](outputs/reports/latest_status.md)
-- Summary riset: [outputs/reports/research_summary.json](outputs/reports/research_summary.json)
-- Summary phase 4: [outputs/reports/phase4_summary.json](outputs/reports/phase4_summary.json)
+- Ledger final: [results/reports/run_ledger.csv](results/reports/run_ledger.csv)
+- Report final lengkap: [results/reports/final_report.md](results/reports/final_report.md)
+- Status terbaru: [results/reports/latest_status.md](results/reports/latest_status.md)
+- Summary riset: [results/reports/research_summary.json](results/reports/research_summary.json)
+- Summary phase 4: [results/reports/phase4_summary.json](results/reports/phase4_summary.json)
 
 Artefak model representatif:
 
-- Baseline CNN 1D: [artifacts/cnn1d/report.json](artifacts/cnn1d/report.json)
-- Baseline CNN 2D: [artifacts/cnn2d/report.json](artifacts/cnn2d/report.json)
-- Tuned CNN 1D: [artifacts/optuna_cnn1d/optuna_report.json](artifacts/optuna_cnn1d/optuna_report.json)
-- Tuned CNN 2D: [artifacts/optuna_cnn2d/optuna_report.json](artifacts/optuna_cnn2d/optuna_report.json)
-- Best final run: [artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json](artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json)
+- Baseline CNN 1D: [results/artifacts/cnn1d/report.json](results/artifacts/cnn1d/report.json)
+- Baseline CNN 2D: [results/artifacts/cnn2d/report.json](results/artifacts/cnn2d/report.json)
+- Tuned CNN 1D: [results/artifacts/optuna_cnn1d/optuna_report.json](results/artifacts/optuna_cnn1d/optuna_report.json)
+- Tuned CNN 2D: [results/artifacts/optuna_cnn2d/optuna_report.json](results/artifacts/optuna_cnn2d/optuna_report.json)
+- Best final run: [results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json](results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json)
 
 ---
 
@@ -245,4 +276,4 @@ python tune_optuna.py \
   --output-dir artifacts/optuna_cnn1d
 ```
 
-README ini sengaja diposisikan sebagai ringkasan strategis. Analisis lengkap, tabel top-10, pembahasan run gagal, dan interpretasi detail ada di [outputs/reports/final_report.md](outputs/reports/final_report.md).
+README ini sengaja diposisikan sebagai ringkasan strategis. Analisis lengkap, tabel top-10, pembahasan run gagal, dan interpretasi detail ada di [results/reports/final_report.md](results/reports/final_report.md).
