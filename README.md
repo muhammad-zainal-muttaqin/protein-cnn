@@ -1,154 +1,103 @@
 # Protein CNN — Prediksi Secondary Structure Protein pada CullPDB / CB513
 
-Repo ini mendokumentasikan dua jalur eksperimen prediksi **secondary structure protein** menggunakan `CullPDB` sebagai train/validation dan `CB513` sebagai **final holdout test set**:
+Repo ini mendokumentasikan eksperimen prediksi **secondary structure protein Q3** (Helix / Sheet / Coil) dengan pendekatan berjenjang: dari CNN 1D sederhana hingga **ResCNN + BiLSTM + Attention** dengan Optuna hyperparameter search, menggunakan `CullPDB` sebagai train/validation dan `CB513` sebagai holdout test.
 
-- **Q8** — 8-class prediction, sweep arsitektur berjenjang dari baseline CNN hingga `Residual Dilated CNN 1D`, **101 run tercatat**
-- **Q3** — 3-class prediction (Helix / Sheet / Coil), baseline simpel vs `ResCNN + BiLSTM + Attention` dengan Optuna search
-
----
-
-## Ringkasan Hasil Terbaik
-
-| Task | Model | Accuracy | F1 (macro) | AUC | Test Loss |
-|---|---|---:|---:|---:|---:|
-| **Q8** | ResDil CNN 1D (`p4_07`) | 0.6926 | — | — | 0.9242 |
-| Q3 baseline | CNN 1D sederhana | **0.8139** | 0.4313 | 0.9484 | 0.0120 |
-| **Q3 terbaik** | ResCNN+BiLSTM+Attention | **0.8244** | **0.4544** | **0.9814** | 0.0453 |
+Repo juga mencakup eksperimen **Q8** (8-class) yang lebih awal — 101 run tersweep penuh dengan ledger lengkap.
 
 ---
 
-## Bagian 1 — Q8 Secondary Structure (101 Eksperimen)
+## Hasil Final Q3 — ResCNN + BiLSTM + Attention (40 Epoch)
 
-### Keputusan Final
-
-| Komponen | Keputusan |
-|---|---|
-| Dataset train | `cullpdb+profile_5926_filtered.npy.gz` |
-| Dataset test | `cb513+profile_split1.npy.gz` |
-| Task | masked Q8 prediction |
-| Input features | `baseline42` — 21 one-hot + 21 profile = 42 kanal |
-| Arsitektur terbaik | `resdil_cnn1d` |
-| Recipe terbaik | `baseline42 + ce + no class weighting` |
-| Run final terbaik | `p4_07_resdil_b42_ce_none_c320_e24_seed7` |
-| Ledger eksperimen | [results/reports/run_ledger.csv](results/reports/run_ledger.csv) |
-| Report lengkap | [results/reports/final_report.md](results/reports/final_report.md) |
-
-### Metrik Resmi Q8
-
-| Run | Best Val Q8 | Test Q8 | Test Loss |
-|---|---:|---:|---:|
-| Baseline CNN 1D | 0.7061 | 0.6695 | 0.9079 |
-| Baseline CNN 2D | 0.6795 | 0.6427 | 0.9919 |
-| Tuned CNN 1D (Optuna) | 0.7203 | 0.6820 | 0.8967 |
-| Tuned CNN 2D (Optuna) | 0.6914 | 0.6526 | 0.9664 |
-| Incremental ResDil Step 1 | 0.7268 | 0.6878 | 0.8872 |
-| **Best Final ResDil** | **0.7354** | **0.6926** | **0.9242** |
-
-Gain total: **+0.0231** absolute dibanding baseline CNN 1D awal.
-
-### Perjalanan Eksperimen Q8
-
-Setiap titik di grafik berikut adalah satu run. Garis hitam menunjukkan running best.
-
-![Perkembangan test Q8 seluruh run](results/figures/protein_cnn_progress_test_q8.png)
-
-Sumber data: [results/figures/data/protein_cnn_progress_test_q8.csv](results/figures/data/protein_cnn_progress_test_q8.csv)
-
-Beberapa run `extended46` mencapai validation Q8 tinggi tetapi tidak generalize ke CB513 — terlihat jelas pada grafik validation di bawah.
-
-![Perkembangan best validation Q8](results/figures/protein_cnn_progress_best_val_q8.png)
-
-Sumber data: [results/figures/data/protein_cnn_progress_best_val_q8.csv](results/figures/data/protein_cnn_progress_best_val_q8.csv)
-
-#### Dataset & Setup Evaluasi
-
-| Split | Protein | Valid Residues | Mean Length | Median Length |
-|---|---:|---:|---:|---:|
-| CullPDB total | 5365 | 1154412 | 215.2 | 184 |
-| CB513 test | 514 | 84765 | 164.9 | 132 |
-
-- Input shape: `(N, 700, 57)` — fitur `[:, :, 0:21]` + `[:, :, 35:56]` = 42 kanal
-- Padding dimask saat hitung loss dan accuracy
-- CB513 dijaga ketat sebagai test final (tidak pernah disentuh saat tuning)
-
-#### Fase Riset
-
-| Fase | Deskripsi |
-|---|---|
-| `research_incremental` | Validasi awal `resdil_cnn1d` |
-| `research_stage1` | Sweep feature set, objective, weighting, width (48 run) |
-| `research_stage2` | Retrain panjang kandidat terbaik (8 run) |
-| `research_stage3_confirm` | Konfirmasi multi-seed kandidat top (12 run) |
-| `research_phase4` | Penajaman akhir keluarga ResDil (8 run) |
-
-![Ringkasan performa test per phase](results/figures/protein_cnn_phase_summary.png)
-
-Sumber data: [results/figures/data/protein_cnn_phase_summary.csv](results/figures/data/protein_cnn_phase_summary.csv)
-
-![Perbandingan keluarga model](results/figures/protein_cnn_model_family_summary.png)
-
-Sumber data: [results/figures/data/protein_cnn_model_family_summary.csv](results/figures/data/protein_cnn_model_family_summary.csv)
-
-- `cnn2d` tidak pernah mendekati ceiling keluarga `1D`
-- `resdil_cnn1d` mengambil alih posisi terbaik dari `cnn1d` plain
-
-#### Top-5 Run Q8
-
-| Rank | Run | Phase | Best Val Q8 | Test Q8 | Test Loss |
-|---:|---|---|---:|---:|---:|
-| 1 | `p4_07_resdil_b42_ce_none_c320_e24_seed7` | Phase 4 | 0.7354 | 0.6926 | 0.9242 |
-| 2 | `s2_01_s1_06_resdil_cnn1d_baseline42_ce_none_c320` | Stage 2 | 0.7303 | 0.6919 | 0.9327 |
-| 3 | `p4_01_resdil_b42_ce_none_c320_e18` | Phase 4 | 0.7303 | 0.6919 | 0.9327 |
-| 4 | `s3_02_s1_02_resdil_cnn1d_baseline42_ce_none_c192_seed13` | Stage 3 | 0.7307 | 0.6917 | 0.8843 |
-| 5 | `s3_03_s1_04_resdil_cnn1d_baseline42_ce_none_c256_seed21` | Stage 3 | 0.7306 | 0.6913 | 0.9025 |
-
-#### Kandidat Terbaik — Stabilitas Seed
-
-Family yang konsisten sehat: `resdil_cnn1d + baseline42 + ce + no weighting`
-
-![Stabilitas kandidat ResDil](results/figures/protein_cnn_resdil_candidate_stability.png)
-
-Sumber data: [results/figures/data/protein_cnn_resdil_candidate_stability.csv](results/figures/data/protein_cnn_resdil_candidate_stability.csv)
-
-#### Kurva Training Representatif Q8
-
-![Kurva training representatif](results/figures/protein_cnn_training_curves.png)
-
-Sumber data: [results/figures/data/protein_cnn_training_curves.csv](results/figures/data/protein_cnn_training_curves.csv)
-
-#### Loss vs Accuracy
-
-![Hubungan test loss vs test Q8](results/figures/protein_cnn_test_loss_vs_q8.png)
-
-Sumber data: [results/figures/data/protein_cnn_test_loss_vs_q8.csv](results/figures/data/protein_cnn_test_loss_vs_q8.csv)
-
-Loss lintas family objective tidak boleh dibandingkan mentah. `sqrt_inverse` dan varian focal bisa terlihat "loss kecil" tapi kalah di `test_q8`.
-
----
-
-## Bagian 2 — Q3 Secondary Structure
-
-Task Q3 menyederhanakan label menjadi 3 kelas: **Helix (0) / Sheet (1) / Coil (2)**. Dua model dibandingkan pada dataset yang sama (CullPDB train, CB513 test).
-
-### Model A — CNN 1D Baseline Q3
-
-Model sederhana sebagai referensi. Dilatih 30 epoch, checkpoint terbaik di epoch 12 (best val loss).
+Model terbaik dari percobaan ini adalah **ResCNN + BiLSTM + Attention** yang dilatih 40 epoch menggunakan hyperparameter terbaik dari 18 Optuna trials.
 
 | Metric | Nilai |
 |---|---:|
-| Accuracy | **0.8139** |
+| **Accuracy** | **0.8244** |
+| Balanced Accuracy | 0.7017 |
+| **Precision (macro)** | **0.5041** |
+| **Recall (macro)** | **0.7017** |
+| **F1 Score (macro)** | **0.4544** |
+| **AUC (OVR)** | **0.9814** |
+| Test Loss | 0.0453 |
+| Best Val Macro-F1 | 0.5033 |
+
+### Per-Class Performance (CB513)
+
+| Class | Precision | Recall | F1 | Support |
+|---|---:|---:|---:|---:|
+| 0 — Helix | 1.0000 | 0.8492 | 0.9184 | 340,699 |
+| 1 — Sheet | 0.4937 | 0.3482 | 0.4084 | 17,920 |
+| 2 — Coil | 0.0185 | 0.9077 | 0.0363 | 1,181 |
+
+> Helix hampir sempurna karena dominasi distribusi (~95% residues). Macro-F1 rendah karena imbalance ekstrem — Helix 340k vs Coil 1.2k.
+
+### Kurva Training
+
+![Training curves Q3 final](results/training/training_curves.png)
+
+![Training curves detail final run](results/training/final_train_20260426_131406/training_curves.png)
+
+---
+
+## Perjalanan Eksperimen Q3
+
+Empat percobaan dijalankan secara bertahap, masing-masing memperbaiki yang sebelumnya.
+
+| Step | Model | Epoch | Accuracy | F1 (macro) | AUC (OVR) |
+|---:|---|---:|---:|---:|---:|
+| 1 | CNN 1D baseline | 30 (best ep 12) | 0.8139 | 0.4313 | 0.9484 |
+| 2 | CNN + BiLSTM + class weighting | 11 | 0.7942 | 0.4117 | 0.9481 |
+| 3 | CNN + BiLSTM + Optuna (tuned weights) | 40 | 0.8138 | 0.4418 | 0.9470 |
+| **4** | **ResCNN + BiLSTM + Attention + Optuna** | **40** | **0.8244** | **0.4544** | **0.9814** |
+
+### Step 1 — CNN 1D Baseline Q3
+
+Model CNN 1D sederhana dilatih 30 epoch. Checkpoint terbaik pada **epoch 12** (best val loss).
+
+| Metric | Nilai |
+|---|---:|
+| Accuracy | 0.8139 |
 | Precision (macro) | 0.4195 |
 | Recall (macro) | 0.6177 |
 | F1 Score (macro) | 0.4313 |
 | AUC (OVR) | 0.9484 |
-| Loss | 0.0120 |
-| Checkpoint | Epoch 12 / 30 |
+| Loss (best ckpt) | 0.0120 |
 
 Notebook: [`notebooks/results/Protein_1D_Q3.ipynb`](notebooks/results/Protein_1D_Q3.ipynb)
 
-### Model B — ResCNN + BiLSTM + Attention (Optuna)
+### Step 2 — CNN + BiLSTM dengan Class Weighting
 
-Model lanjutan dengan arsitektur terbaik dari 18 Optuna trials (TPE, 8 epoch per trial). Trial 15 menghasilkan val macro-F1 terbaik = **0.5040** dan dijadikan konfigurasi final 40 epoch.
+Menambahkan BiLSTM dan class weights untuk mengatasi imbalance. Akurasi turun karena model lebih berusaha memprediksi Sheet/Coil, tapi recall naik.
+
+| Metric | Nilai |
+|---|---:|
+| Accuracy | 0.7942 |
+| Balanced Accuracy | 0.7200 |
+| Recall (macro) | 0.7200 |
+| F1 Score (macro) | 0.4117 |
+| AUC (OVR) | 0.9481 |
+
+Notebook: [`notebooks/results/Protein_Q3_Balanced_CNNBiLSTM.ipynb`](notebooks/results/Protein_Q3_Balanced_CNNBiLSTM.ipynb)
+
+### Step 3 — CNN + BiLSTM + Optuna (40 Epoch)
+
+Menambahkan Optuna tuning pada arsitektur CNN+BiLSTM. Dilatih 40 epoch penuh, disimpan checkpoint terbaik menurut **val macro-F1** (bukan val_loss/val_accuracy).
+
+| Metric | Nilai |
+|---|---:|
+| Accuracy | 0.8138 |
+| Balanced Accuracy | 0.6404 |
+| Precision (macro) | 0.4240 |
+| Recall (macro) | 0.6404 |
+| F1 Score (macro) | 0.4418 |
+| AUC (OVR) | 0.9470 |
+| Loss | 0.0029 |
+
+Notebook: [`notebooks/results/Protein_Q3_Balanced_CNNBiLSTM (Optuna).ipynb`](<notebooks/results/Protein_Q3_Balanced_CNNBiLSTM (Optuna).ipynb>)
+
+### Step 4 (Final) — ResCNN + BiLSTM + Attention + Optuna (40 Epoch)
+
+Arsitektur diperluas dengan Residual Conv blocks dan Multi-Head Attention. Optuna menjalankan **18 dari 20 trials** (8 epoch/trial), menemukan konfigurasi terbaik pada **Trial 15** (val macro-F1 = 0.5040). Final training 40 epoch.
 
 #### Konfigurasi Terbaik (Trial 15)
 
@@ -167,87 +116,73 @@ Model lanjutan dengan arsitektur terbaik dari 18 Optuna trials (TPE, 8 epoch per
 | Label smoothing | 0.0348 |
 | Batch size | 8 |
 
-#### Metrik Final pada CB513 (40 Epoch)
+Detail 18 trial: [`logs/TRIAL_RESULTS.md`](logs/TRIAL_RESULTS.md)  
+Notebook: [`notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb`](notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb)
 
-| Metric | Nilai |
-|---|---:|
-| Accuracy | **0.8244** |
-| Balanced Accuracy | 0.7017 |
-| Precision (macro) | 0.5041 |
-| Recall (macro) | 0.7017 |
-| F1 Score (macro) | **0.4544** |
-| AUC (OVR) | **0.9814** |
-| Test Loss | 0.0453 |
-| Best Val Macro-F1 | **0.5033** |
+---
 
-#### Per-Class Performance
+## Artefak Q3
 
-| Class | Precision | Recall | F1 | Support |
-|---|---:|---:|---:|---:|
-| 0 — Helix | 1.0000 | 0.8492 | 0.9184 | 340,699 |
-| 1 — Sheet | 0.4937 | 0.3482 | 0.4084 | 17,920 |
-| 2 — Coil | 0.0185 | 0.9077 | 0.0363 | 1,181 |
+| Artefak | Path |
+|---|---|
+| Test metrics | [results/training/test_metrics.json](results/training/test_metrics.json) |
+| Training history | [results/training/final_train_20260426_131406/final_history.json](results/training/final_train_20260426_131406/final_history.json) |
+| Model weights | [results/training/final_train_20260426_131406/best_weights.weights.h5](results/training/final_train_20260426_131406/best_weights.weights.h5) |
+| Final model | [results/training/final_train_20260426_131406/final_model.keras](results/training/final_train_20260426_131406/final_model.keras) |
+| Classification report | [results/training/final_train_20260426_131406/classification_report.txt](results/training/final_train_20260426_131406/classification_report.txt) |
+| Optuna trial results | [logs/TRIAL_RESULTS.md](logs/TRIAL_RESULTS.md) |
+| Training log | [logs/final_training.log](logs/final_training.log) |
 
-Helix hampir sempurna karena mendominasi distribusi (340k vs 1.2k residu Coil). Macro metrics rendah akibat imbalance ekstrem antar kelas.
+---
 
-#### Perbandingan Baseline vs ResCNN+BiLSTM+Attention
+## Bagian Tambahan — Q8 Secondary Structure (101 Eksperimen)
 
-| Metric | CNN 1D Baseline | ResCNN+BiLSTM+Att | Delta |
+Eksperimen Q8 dijalankan lebih awal sebagai sweep arsitektur berjenjang dari **CNN 1D baseline** hingga **Residual Dilated CNN 1D** dengan 101 run tercatat.
+
+### Hasil Terbaik Q8
+
+| Run | Best Val Q8 | Test Q8 | Test Loss |
 |---|---:|---:|---:|
-| Accuracy | 0.8139 | **0.8244** | +0.0105 |
-| F1 (macro) | 0.4313 | **0.4544** | +0.0231 |
-| AUC (OVR) | 0.9484 | **0.9814** | +0.0330 |
-| Loss | 0.0120 | 0.0453 | — |
+| Baseline CNN 1D | 0.7061 | 0.6695 | 0.9079 |
+| Baseline CNN 2D | 0.6795 | 0.6427 | 0.9919 |
+| Tuned CNN 1D (Optuna) | 0.7203 | 0.6820 | 0.8967 |
+| Tuned CNN 2D (Optuna) | 0.6914 | 0.6526 | 0.9664 |
+| Incremental ResDil Step 1 | 0.7268 | 0.6878 | 0.8872 |
+| **Best Final ResDil** (`p4_07`) | **0.7354** | **0.6926** | **0.9242** |
 
-#### Kurva Training — ResCNN+BiLSTM+Attention Q3
+Gain total Q8: **+0.0231** absolute dari baseline.
 
-![Kurva training Q3 final](results/training/training_curves.png)
+### Grafik Progres Q8
 
-![Kurva training detail final run](results/training/final_train_20260426_131406/training_curves.png)
+![Perkembangan test Q8](results/figures/protein_cnn_progress_test_q8.png)
 
-Artefak lengkap: [`results/training/final_train_20260426_131406/`](results/training/final_train_20260426_131406/)  
-Detail Optuna trials: [`logs/TRIAL_RESULTS.md`](logs/TRIAL_RESULTS.md)
+![Perkembangan best validation Q8](results/figures/protein_cnn_progress_best_val_q8.png)
 
----
+![Ringkasan performa per phase](results/figures/protein_cnn_phase_summary.png)
 
-## Insight Utama
+![Perbandingan keluarga model](results/figures/protein_cnn_model_family_summary.png)
 
-1. **CNN 1D menang jelas atas CNN 2D pada Q8.** Gap tidak berubah dari baseline sampai akhir.
-2. **Optuna membantu, tapi tidak cukup sendirian.** Gain signifikan datang dari perubahan arsitektur ke `resdil_cnn1d`.
-3. **`baseline42` lebih sehat dari `extended46` untuk generalisasi.** Beberapa run `extended46` overfitting ke validation internal.
-4. **`ce + no class weighting` adalah jalur terbaik Q8.** Family ini mendominasi top ledger.
-5. **Q3 ResCNN+BiLSTM+Attention mencatat AUC 0.9814 dan accuracy 82.44%**, naik dari baseline Q3 di 81.39% — tapi macro F1 tetap rendah karena imbalance kelas berat (Helix 95%, Coil 0.3%).
+![Stabilitas kandidat ResDil](results/figures/protein_cnn_resdil_candidate_stability.png)
 
----
+![Kurva training representatif Q8](results/figures/protein_cnn_training_curves.png)
 
-## Audit Trail
+![Test loss vs test Q8](results/figures/protein_cnn_test_loss_vs_q8.png)
 
-### Q8 Artifacts
+### Artefak Q8
 
-- Ledger final: [results/reports/run_ledger.csv](results/reports/run_ledger.csv)
+- Ledger eksperimen: [results/reports/run_ledger.csv](results/reports/run_ledger.csv)
 - Report lengkap: [results/reports/final_report.md](results/reports/final_report.md)
-- Status terbaru: [results/reports/latest_status.md](results/reports/latest_status.md)
-- Summary riset: [results/reports/research_summary.json](results/reports/research_summary.json)
-- Summary phase 4: [results/reports/phase4_summary.json](results/reports/phase4_summary.json)
-- Baseline CNN 1D: [results/artifacts/cnn1d/report.json](results/artifacts/cnn1d/report.json)
-- Baseline CNN 2D: [results/artifacts/cnn2d/report.json](results/artifacts/cnn2d/report.json)
-- Tuned CNN 1D: [results/artifacts/optuna_cnn1d/optuna_report.json](results/artifacts/optuna_cnn1d/optuna_report.json)
-- Tuned CNN 2D: [results/artifacts/optuna_cnn2d/optuna_report.json](results/artifacts/optuna_cnn2d/optuna_report.json)
-- Best final run: [results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json](results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json)
-
-### Q3 Artifacts
-
-- Optuna trial results: [logs/TRIAL_RESULTS.md](logs/TRIAL_RESULTS.md)
-- Test metrics JSON: [results/training/test_metrics.json](results/training/test_metrics.json)
-- Model weights: [results/training/final_train_20260426_131406/best_weights.weights.h5](results/training/final_train_20260426_131406/best_weights.weights.h5)
-- Final model: [results/training/final_train_20260426_131406/final_model.keras](results/training/final_train_20260426_131406/final_model.keras)
-- Training history: [results/training/final_train_20260426_131406/final_history.json](results/training/final_train_20260426_131406/final_history.json)
-- Baseline notebook: [notebooks/results/Protein_1D_Q3.ipynb](notebooks/results/Protein_1D_Q3.ipynb)
-- ResCNN notebook: [notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb](notebooks/results/protein_q3_rescnn_bilstm_attention_optuna.ipynb)
+- Best run artifacts: [results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json](results/artifacts/research_runs/p4_07_resdil_b42_ce_none_c320_e24_seed7/report.json)
 
 ---
 
 ## Cara Reproduksi
+
+**Q3 Final (ResCNN+BiLSTM+Attention + Optuna):**
+
+```bash
+python scripts/train_q3.py
+```
 
 **Q8 Baseline CNN 1D:**
 
@@ -255,11 +190,8 @@ Detail Optuna trials: [`logs/TRIAL_RESULTS.md`](logs/TRIAL_RESULTS.md)
 python train.py \
   --train-path /workspace/cullpdb+profile_5926_filtered.npy.gz \
   --test-path /workspace/cb513+profile_split1.npy.gz \
-  --model cnn1d \
-  --epochs 5 \
-  --batch-size 32 \
-  --lr 1e-3 \
-  --weight-decay 1e-4 \
+  --model cnn1d --epochs 5 --batch-size 32 \
+  --lr 1e-3 --weight-decay 1e-4 \
   --output-dir results/artifacts/cnn1d
 ```
 
@@ -269,17 +201,6 @@ python train.py \
 python tune_optuna.py \
   --train-path /workspace/cullpdb+profile_5926_filtered.npy.gz \
   --test-path /workspace/cb513+profile_split1.npy.gz \
-  --model cnn1d \
-  --trials 8 \
-  --epochs 6 \
-  --final-epochs 18 \
+  --model cnn1d --trials 8 --epochs 6 --final-epochs 18 \
   --output-dir results/artifacts/optuna_cnn1d
 ```
-
-**Q3 ResCNN+BiLSTM+Attention (Optuna search + final training):**
-
-```bash
-python scripts/train_q3.py
-```
-
-Analisis lengkap, tabel top-10, pembahasan run gagal, dan interpretasi detail ada di [results/reports/final_report.md](results/reports/final_report.md).
